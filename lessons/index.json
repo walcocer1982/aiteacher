@@ -1,0 +1,12 @@
+{
+  "lessons": [
+    {
+      "id": "mineria/iperc/lesson01",
+      "title": "IPERC Continuo — Lección 01",
+      "course": "mineria",
+      "level": "basic",
+      "tags": ["mineria", "seguridad", "iperc"],
+      "path": "mineria/iperc/lesson01.json"
+    }
+  ]
+}

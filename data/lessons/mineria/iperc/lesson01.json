@@ -1,0 +1,74 @@
+{
+  "id": "mineria/iperc/lesson01",
+  "title": "IPERC Continuo — Lección 01",
+  "language": "es",
+  "level": "basic",
+  "objectives": [
+    "Distinguir peligro y riesgo",
+    "Aplicar jerarquía de controles en un caso simple"
+  ],
+  "steps": [
+    { 
+      "id": "s1", 
+      "type": "NARRATION", 
+      "prompt": "Bienvenida y encuadre de la lección sobre IPERC" 
+    },
+    { 
+      "id": "s2", 
+      "type": "CONTENT", 
+      "prompt": "Explica peligro vs riesgo con 1 ejemplo", 
+      "answerType": "open",
+      "content": "Peligro es la fuente de daño; riesgo = probabilidad x severidad. Ejemplo: trabajar en altura (peligro) vs caerse (riesgo)" 
+    },
+    { 
+      "id": "s3", 
+      "type": "ASK", 
+      "prompt": "Define 'peligro' con tus palabras y da 1 ejemplo", 
+      "answerType": "definition",
+      "rubric": { 
+        "criteria": [
+          { "id": "precision", "description": "Usa términos correctos", "weight": 0.6 },
+          { "id": "clarity", "description": "1–3 oraciones claras", "weight": 0.4 }
+        ], 
+        "threshold": 0.6 
+      } 
+    },
+    { 
+      "id": "s4", 
+      "type": "EXERCISE", 
+      "prompt": "Enumera 3 controles para tu ejemplo de peligro",
+      "answerType": "list",
+      "rubric": {
+        "criteria": [
+          { "id": "coverage", "description": "Mínimo 3 ítems relevantes", "weight": 0.7 },
+          { "id": "relevance", "description": "Ítems apropiados al contexto", "weight": 0.3 }
+        ],
+        "threshold": 0.6
+      }
+    },
+    { 
+      "id": "s5", 
+      "type": "QUIZ", 
+      "prompt": "¿Cuál es la diferencia entre peligro y riesgo?", 
+      "answerType": "mcq", 
+      "data": { 
+        "options": [
+          "Peligro es la probabilidad, riesgo es la severidad",
+          "Peligro es la fuente de daño, riesgo es la probabilidad x severidad",
+          "Son lo mismo"
+        ],
+        "correct": 1
+      },
+      "rubric": {
+        "criteria": [
+          { "id": "correctness", "description": "Respuesta correcta", "weight": 0.6 },
+          { "id": "justification", "description": "Justificación válida", "weight": 0.4 }
+        ],
+        "threshold": 0.6
+      }
+    }
+  ],
+  "meta": { 
+    "tags": ["mineria", "seguridad", "iperc"] 
+  }
+}
