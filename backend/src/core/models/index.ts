@@ -43,7 +43,7 @@ export interface Session {
 
 export interface Turn {
   stepId: string;
-  role: "tutor" | "student" | "verifier" | "help" | "system" | "socratic";
+  role: "tutor" | "student" | "verifier" | "help" | "system" | "socratic" | "planner";
   text: string;
   score?: number;
   findings?: string[];
