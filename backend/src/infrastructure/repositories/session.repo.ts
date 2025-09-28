@@ -43,13 +43,13 @@ export class SessionRepo {
 }
 
 export function logTurn(
-  session: Session, 
-  stepId: string, 
-  role: Turn['role'], 
-  text: string, 
-  score?: number, 
+  session: Session,
+  stepId: string,
+  role: Turn['role'],
+  text: string,
+  score?: number,
   findings?: string[]
-): void {
+): Turn {
   const turn: Turn = {
     stepId,
     role,
@@ -59,4 +59,5 @@ export function logTurn(
   };
 
   session.history.push(turn);
+  return turn;
 }

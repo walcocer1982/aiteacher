@@ -6,7 +6,10 @@ class DocenteIAChat {
         this.sessionId = null;
         this.currentStep = null;
         this.isProcessing = false;
-        
+        this.currentStepIndex = 0;
+        this.totalSteps = 0;
+        this.currentLessonTitle = '';
+
         this.initializeElements();
         this.bindEvents();
         this.updateLessonInfo();
@@ -84,14 +87,25 @@ class DocenteIAChat {
 
             const data = await response.json();
             this.sessionId = data.sessionId;
-            
+            this.currentStepIndex = typeof data.currentStepIndex === 'number' ? data.currentStepIndex : 0;
+            this.totalSteps = data.lesson?.totalSteps ?? 0;
+            this.currentLessonTitle = data.lesson?.title ?? '';
+
             this.updateSessionUI();
-            this.clearMessages();
+            this.clearMessages(false);
             this.addMessage('system', '✅ Sesión iniciada correctamente. El tutor comenzará la lección en breve...');
-            
-            // Obtener el estado inicial de la sesión
-            await this.refreshSessionState();
-            
+
+            if (Array.isArray(data.initialTurns)) {
+                data.initialTurns
+                    .filter(turn => turn && turn.text)
+                    .forEach(turn => this.addMessage(turn.role, turn.text, turn.score, turn.findings));
+            }
+
+            this.updateProgressDisplay();
+            if (this.currentLessonTitle) {
+                this.lessonInfo.textContent = this.currentLessonTitle;
+            }
+
         } catch (error) {
             console.error('Error starting session:', error);
             this.showError('Error al iniciar la sesión: ' + error.message);
@@ -131,16 +145,27 @@ class DocenteIAChat {
             }
 
             const data = await response.json();
-            
-            // Mostrar respuesta del sistema
-            this.addMessage('tutor', data.reply);
-            
+
+            const replyRole = data.replyRole || 'tutor';
+            this.addMessage(replyRole, data.reply);
+
             if (data.score !== undefined) {
                 this.scoreDisplay.textContent = Math.round(data.score * 100) + '/100';
             }
-            
+
             if (data.feedback) {
                 this.addMessage('verifier', data.feedback, data.score);
+            }
+
+            if (Array.isArray(data.nextTurns)) {
+                data.nextTurns
+                    .filter(turn => turn && turn.text)
+                    .forEach(turn => this.addMessage(turn.role, turn.text, turn.score, turn.findings));
+            }
+
+            if (typeof data.currentStepIndex === 'number') {
+                this.currentStepIndex = data.currentStepIndex;
+                this.updateProgressDisplay();
             }
 
             if (data.isFinished) {
@@ -181,7 +206,13 @@ class DocenteIAChat {
             }
 
             const data = await response.json();
-            this.addMessage('help', data.reply);
+            const replyRole = data.replyRole || 'help';
+            this.addMessage(replyRole, data.reply);
+
+            if (typeof data.currentStepIndex === 'number') {
+                this.currentStepIndex = data.currentStepIndex;
+                this.updateProgressDisplay();
+            }
 
         } catch (error) {
             console.error('Error requesting help:', error);
@@ -201,7 +232,9 @@ class DocenteIAChat {
             }
 
             const data = await response.json();
-            
+
+            this.clearMessages(false);
+
             // Mostrar historial de turnos
             if (data.history && data.history.length > 0) {
                 data.history.forEach(turn => {
@@ -210,11 +243,17 @@ class DocenteIAChat {
                     }
                 });
             }
-            
-            if (data.currentStepIndex !== undefined) {
-                this.currentStepDisplay.textContent = `Paso ${data.currentStepIndex + 1}`;
+
+            if (typeof data.currentStepIndex === 'number') {
+                this.currentStepIndex = data.currentStepIndex;
             }
-            
+
+            if (data.lesson && typeof data.lesson.totalSteps === 'number') {
+                this.totalSteps = data.lesson.totalSteps;
+            }
+
+            this.updateProgressDisplay();
+
             if (data.isFinished) {
                 this.handleSessionCompleted();
             }
@@ -228,7 +267,7 @@ class DocenteIAChat {
     addMessage(role, text, score, findings) {
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message-bubble';
-        
+
         const isUser = role === 'student';
         const messageClass = isUser ? 'message-user' : 'message-ai';
         
@@ -284,6 +323,7 @@ class DocenteIAChat {
             'verifier': '✅',
             'socratic': '🤔',
             'help': '💡',
+            'planner': '🧭',
             'system': '🤖',
             'student': '👤'
         };
@@ -296,6 +336,7 @@ class DocenteIAChat {
             'verifier': 'Evaluador',
             'socratic': 'Coach Socrático',
             'help': 'Mesa de Ayuda',
+            'planner': 'Planificador',
             'system': 'Sistema',
             'student': 'Estudiante'
         };
@@ -307,7 +348,8 @@ class DocenteIAChat {
             'tutor': 'tutorStatus',
             'verifier': 'verifierStatus',
             'socratic': 'socraticStatus',
-            'help': 'helpdeskStatus'
+            'help': 'helpdeskStatus',
+            'planner': 'plannerStatus'
         };
 
         const elementId = agentMap[agent];
@@ -338,6 +380,7 @@ class DocenteIAChat {
             this.resetBtn.disabled = false;
             this.inputHint.textContent = 'Escribe tu respuesta o pregunta...';
             this.startSessionBtn.textContent = 'Nueva Sesión';
+            this.updateProgressDisplay();
         }
     }
 
@@ -346,11 +389,16 @@ class DocenteIAChat {
         this.messageInput.disabled = true;
         this.sendMessageBtn.disabled = true;
         this.inputHint.textContent = 'Lección completada';
+        this.currentStepIndex = this.totalSteps ? this.totalSteps - 1 : this.currentStepIndex;
+        this.updateProgressDisplay();
     }
 
     resetSession() {
         this.sessionId = null;
         this.currentStep = null;
+        this.currentStepIndex = 0;
+        this.totalSteps = 0;
+        this.currentLessonTitle = '';
         this.sessionStatus.textContent = 'No hay sesión activa';
         this.sessionIdDisplay.textContent = '-';
         this.currentStepDisplay.textContent = '-';
@@ -365,7 +413,7 @@ class DocenteIAChat {
         this.agentIndicator.textContent = 'Sistema';
         this.stepIndicator.textContent = 'Esperando...';
         this.clearMessages();
-        
+
         // Resetear estados de agentes
         ['plannerStatus', 'tutorStatus', 'verifierStatus', 'socraticStatus', 'helpdeskStatus'].forEach(id => {
             const element = document.getElementById(id);
@@ -374,9 +422,16 @@ class DocenteIAChat {
                 element.className = 'agent-badge px-2 py-1 rounded text-xs font-medium bg-muted text-muted-foreground';
             }
         });
+
+        this.updateLessonInfo();
     }
 
-    clearMessages() {
+    clearMessages(showWelcome = true) {
+        if (!showWelcome) {
+            this.messagesContainer.innerHTML = '';
+            return;
+        }
+
         this.messagesContainer.innerHTML = `
             <div class="text-center text-muted-foreground py-8">
                 <div class="text-4xl mb-4">👋</div>
@@ -384,6 +439,23 @@ class DocenteIAChat {
                 <p>Selecciona una lección y haz clic en "Iniciar Sesión" para comenzar tu experiencia de aprendizaje.</p>
             </div>
         `;
+    }
+
+    updateProgressDisplay() {
+        if (!this.sessionId) {
+            this.currentStepDisplay.textContent = '-';
+            this.progressDisplay.textContent = this.totalSteps ? `0/${this.totalSteps}` : '0/0';
+            return;
+        }
+
+        if (this.totalSteps > 0) {
+            const stepNumber = Math.min(this.currentStepIndex + 1, this.totalSteps);
+            this.currentStepDisplay.textContent = `Paso ${stepNumber}`;
+            this.progressDisplay.textContent = `${stepNumber}/${this.totalSteps}`;
+        } else {
+            this.currentStepDisplay.textContent = `Paso ${this.currentStepIndex + 1}`;
+            this.progressDisplay.textContent = '-';
+        }
     }
 
     setLoading(loading) {
